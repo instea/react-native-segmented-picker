@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-classes-per-file
 import React, { Component, ReactElement } from 'react';
 import {
   Platform,
@@ -65,6 +66,12 @@ export interface Props {
   onValueChange: (event: SelectionEvent) => void;
   onCancel: (event: Selections) => void,
   onConfirm: (event: Selections) => void,
+}
+
+class SkipComponent extends React.Component<any> {
+  render() {
+    return this.props.children;
+  }
 }
 
 interface State {
@@ -636,8 +643,14 @@ export default class SegmentedPicker extends Component<Props, State> {
       backgroundColor,
     } = this.props;
 
+    // allows rendering wheel picker inline
+    const showToolbar = false;
+    const showInModal = false;
+    const ModalCompoent = showInModal ? Modal : SkipComponent as any;
+    const AnimatedViewComponent = showInModal ? Animatable.View : SkipComponent as any;
+
     return (
-      <Modal
+      <ModalCompoent
         visible={visible}
         animationType={Platform.select({
           ios: 'fade',
@@ -646,7 +659,7 @@ export default class SegmentedPicker extends Component<Props, State> {
         transparent
         onRequestClose={this.onCancel}
       >
-        <Animatable.View
+        <AnimatedViewComponent
           useNativeDriver
           animation="fadeIn"
           easing="ease-out-cubic"
@@ -655,11 +668,13 @@ export default class SegmentedPicker extends Component<Props, State> {
           style={styles.modalContainer}
           testID={TEST_IDS.PICKER}
         >
+          {showInModal && (
           <TouchableWithoutFeedback onPress={this.onCancel} testID={TEST_IDS.CLOSE_AREA}>
             <View style={[styles.closeableContainer, { height: `${(100 - (size * 100))}%` }]} />
           </TouchableWithoutFeedback>
+          )}
 
-          <Animatable.View
+          <AnimatedViewComponent
             useNativeDriver
             animation={{
               from: { opacity: 0, translateY: 250 },
@@ -671,6 +686,7 @@ export default class SegmentedPicker extends Component<Props, State> {
             ref={this.pickerContainerRef}
             style={[styles.pickerContainer, { height: `${size * 100}%`, backgroundColor }]}
           >
+            {showToolbar && (
             <Toolbar
               confirmText={confirmText}
               confirmTextColor={confirmTextColor}
@@ -678,6 +694,7 @@ export default class SegmentedPicker extends Component<Props, State> {
               toolbarBorderColor={toolbarBorderColor}
               onConfirm={this.onConfirm}
             />
+            )}
 
             <View style={styles.selectableArea}>
               {/* Native iOS Picker is enabled */}
@@ -766,9 +783,9 @@ export default class SegmentedPicker extends Component<Props, State> {
                 </>
               )}
             </View>
-          </Animatable.View>
-        </Animatable.View>
-      </Modal>
+          </AnimatedViewComponent>
+        </AnimatedViewComponent>
+      </ModalCompoent>
     );
   }
 }
