@@ -449,6 +449,10 @@ export default class SegmentedPicker extends Component<Props, State> {
    */
   private onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>, column: string): void => {
     if (!event.nativeEvent) return;
+    const dirty = this.cache.get(IS_DIRTY);
+    if (!dirty) {
+      this.cache.set(IS_DIRTY, true);
+    }
     const { y } = event.nativeEvent.contentOffset;
     const lastScrollOffset = this.cache.get(`${LAST_SCROLL_OFFSET}${column}`);
     if (lastScrollOffset !== null && lastScrollOffset < y) {
