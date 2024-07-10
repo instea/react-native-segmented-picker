@@ -773,7 +773,14 @@ export default class SegmentedPicker extends Component<Props, State> {
                             onMomentumScrollEnd={event => (
                               this.onMomentumScrollEnd(event, column)
                             )}
-                            scrollEventThrottle={32}
+                            scrollEventThrottle={Platform.select({
+                              ios: 32,
+                              // workaround: https://github.com/facebook/react-native/issues/44222
+                              // - bug on android: onScrollEndDrag is throttled out
+                              // - it causes picker to freeze and it won't snap to item
+                              // - because skipping onScrollEndDrag will prevent calling selectIndex
+                              android: 0,
+                            })}
                             decelerationRate={Platform.select({
                               ios: 1,
                               android: undefined,
