@@ -4,7 +4,7 @@ export const defaultProps = {
   native: false,
   options: [],
   visible: false,
-  defaultSelections: {},
+  selections: {},
   size: 0.45,
   confirmText: 'Done',
   nativeTestID: undefined,
@@ -38,7 +38,7 @@ export const propTypes = {
     }),
   ).isRequired,
   visible: PropTypes.bool,
-  defaultSelections: PropTypes.objectOf((
+  selections: PropTypes.objectOf((
     propValue,
     key,
     componentName,

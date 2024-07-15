@@ -116,7 +116,7 @@ describe('SegmentedPicker', () => {
             items: [],
           },
         ]}
-        defaultSelections={{
+        selections={{
           col_1: 'francesca',
           col_2: 'veronica',
           col_3: 'Missing labels should be ignored!',
