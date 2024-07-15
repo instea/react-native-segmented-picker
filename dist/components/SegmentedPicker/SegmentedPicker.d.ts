@@ -6,7 +6,7 @@ export interface Props {
     native: boolean;
     options: PickerOptions;
     visible: boolean;
-    defaultSelections: Selections;
+    selections: Selections;
     size: number;
     confirmText: string;
     nativeTestID: string;
@@ -39,7 +39,7 @@ export default class SegmentedPicker extends Component<Props, State> {
             flex: import("prop-types").Requireable<number>;
         }> | null | undefined)[]>;
         visible: import("prop-types").Requireable<boolean>;
-        defaultSelections: import("prop-types").Requireable<{
+        selections: import("prop-types").Requireable<{
             [x: string]: unknown;
         }>;
         size: (props: any, propName: "size", componentName: string) => Error | null;
@@ -164,10 +164,11 @@ export default class SegmentedPicker extends Component<Props, State> {
     private findItemIndexByValue;
     /**
      * @private
-     * Focuses the default picklist selections.
+     * Focuses the picklist selections from controlled prop.
      * @return {void}
      */
-    private setDefaultSelections;
+    synchronizeSelections: () => void;
+    private initializeDefaultSelections;
     /**
      * @private
      * @param {string} column
@@ -232,6 +233,7 @@ export default class SegmentedPicker extends Component<Props, State> {
      * @return {void}
      */
     private onMomentumScrollEnd;
+    private isColumnActive;
     /**
      * @private
      * Scrolls to the nearest index based off a y offset from the FlatList.

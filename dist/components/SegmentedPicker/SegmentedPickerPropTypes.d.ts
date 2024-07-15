@@ -3,7 +3,7 @@ export declare const defaultProps: {
     native: boolean;
     options: never[];
     visible: boolean;
-    defaultSelections: {};
+    selections: {};
     size: number;
     confirmText: string;
     nativeTestID: undefined;
@@ -31,7 +31,7 @@ export declare const propTypes: {
         flex: PropTypes.Requireable<number>;
     }> | null | undefined)[]>;
     visible: PropTypes.Requireable<boolean>;
-    defaultSelections: PropTypes.Requireable<{
+    selections: PropTypes.Requireable<{
         [x: string]: unknown;
     }>;
     size: (props: any, propName: "size", componentName: string) => Error | null;

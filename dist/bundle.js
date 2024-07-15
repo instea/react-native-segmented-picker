@@ -7,7 +7,7 @@ const defaultProps = {
   native: false,
   options: [],
   visible: false,
-  defaultSelections: {},
+  selections: {},
   size: 0.45,
   confirmText: 'Done',
   nativeTestID: undefined,
@@ -36,7 +36,7 @@ const propTypes = {
     flex: PropTypes.number
   })).isRequired,
   visible: PropTypes.bool,
-  defaultSelections: PropTypes.objectOf((propValue, key, componentName, location, propName) => {
+  selections: PropTypes.objectOf((propValue, key, componentName, location, propName) => {
     const column = propValue[key];
     return column && String(column) !== column ? new Error(`Invalid prop \`${propName}\` supplied to \`${componentName}\`.` + ' Must be in the format: `{column1: \'value\', column2: \'value\', ...}`') : null;
   }),
@@ -552,23 +552,29 @@ class SegmentedPicker extends Component {
         return;
       }
 
-      list.scrollToIndex({
-        index,
-        animated
-      });
-      const items = this.columnItems(column);
-
-      if (!this.selectionChanges[column] || this.selectionChanges[column] && this.selectionChanges[column] !== items[index].value) {
-        this.selectionChanges = Object.assign(Object.assign({}, this.selectionChanges), {
-          [column]: items[index].value
+      try {
+        list.scrollToIndex({
+          index,
+          animated
         });
+        const items = this.columnItems(column);
 
-        if (emitEvent) {
-          onValueChange({
-            column,
-            value: items[index].value
+        if (!this.selectionChanges[column] || this.selectionChanges[column] && this.selectionChanges[column] !== items[index].value) {
+          this.selectionChanges = Object.assign(Object.assign({}, this.selectionChanges), {
+            [column]: items[index].value
           });
+
+          if (emitEvent) {
+            setTimeout(() => {
+              onValueChange({
+                column,
+                value: items[index].value
+              });
+            }, 200); // safe value to prevent race-conditions when syncing selections
+          }
         }
+      } catch (err) {
+        console.warn('error scrolling to index', err);
       }
     };
     /**
@@ -653,26 +659,30 @@ class SegmentedPicker extends Component {
     };
     /**
      * @private
-     * Focuses the default picklist selections.
+     * Focuses the picklist selections from controlled prop.
      * @return {void}
      */
 
 
-    this.setDefaultSelections = () => {
+    this.synchronizeSelections = () => {
       const {
         options,
-        defaultSelections
+        selections
       } = this.props;
-      const dirty = this.cache.get(IS_DIRTY);
+      setTimeout(() => {
+        // User defined default selections
+        Object.keys(selections).forEach(column => {
+          if (!this.isColumnActive(column)) {
+            this.selectValue(selections[column], column, false, false, true);
+          }
+        }); // Set all other selections to index 0
 
-      if (!dirty) {
-        setTimeout(() => {
-          // User defined default selections
-          Object.keys(defaultSelections).forEach(column => this.selectValue(defaultSelections[column], column, false, false, true)); // Set all other selections to index 0
-
-          options.filter(column => !Object.keys(defaultSelections).includes(column.key) && this.columnItems(column.key).length > 0).forEach(column => this.selectIndex(0, column.key, false, false));
-        }, 0);
-      }
+        options.filter(column => !Object.keys(selections).includes(column.key) && this.columnItems(column.key).length > 0).forEach(column => {
+          if (this.isColumnActive(column.key)) {
+            this.selectIndex(0, column.key, false, false);
+          }
+        });
+      }, 0);
     };
     /**
      * @private
@@ -685,7 +695,7 @@ class SegmentedPicker extends Component {
     this.setFlatListRef = (column, ref) => {
       if (ref) {
         this.cache.set(`${FLAT_LIST_REF}${column}`, ref);
-        this.setDefaultSelections();
+        this.initializeDefaultSelections();
       }
     };
     /**
@@ -852,10 +862,7 @@ class SegmentedPicker extends Component {
       } = event.nativeEvent.contentOffset;
       const nearestOptionIndex = this.nearestOptionIndex(y, column);
       setTimeout(() => {
-        const isDragging = this.cache.get(`${IS_DRAGGING}${column}`);
-        const isMomentumScrolling = this.cache.get(`${IS_MOMENTUM_SCROLLING}${column}`);
-
-        if (!isDragging && !isMomentumScrolling) {
+        if (!this.isColumnActive(column)) {
           this.selectIndex(nearestOptionIndex, column);
         }
       }, delay);
@@ -979,6 +986,8 @@ class SegmentedPicker extends Component {
 
 
   componentDidUpdate(prevProps) {
+    var _a, _b;
+
     const {
       visible: visibleProp
     } = this.props;
@@ -993,6 +1002,34 @@ class SegmentedPicker extends Component {
     if (visibleProp === false && prevProps.visible === true) {
       this.hide();
     }
+
+    const prevSelections = (_a = prevProps.selections, _a !== null && _a !== void 0 ? _a : {});
+    const nextSelections = (_b = this.props.selections, _b !== null && _b !== void 0 ? _b : {});
+    const hasSelectionChanged = this.props.options.some(({
+      key
+    }) => prevSelections[key] !== nextSelections[key]);
+
+    if (hasSelectionChanged) {
+      this.synchronizeSelections();
+    }
+  }
+
+  initializeDefaultSelections() {
+    const {
+      options,
+      selections
+    } = this.props;
+    const dirty = this.cache.get(IS_DIRTY);
+
+    if (!dirty) {
+      this.synchronizeSelections();
+    }
+  }
+
+  isColumnActive(column) {
+    const isDragging = this.cache.get(`${IS_DRAGGING}${column}`);
+    const isMomentumScrolling = this.cache.get(`${IS_MOMENTUM_SCROLLING}${column}`);
+    return isDragging || isMomentumScrolling;
   }
 
   render() {
@@ -1002,7 +1039,7 @@ class SegmentedPicker extends Component {
     const {
       nativeTestID,
       options,
-      defaultSelections,
+      selections,
       size,
       confirmText,
       confirmTextColor,
@@ -1075,7 +1112,7 @@ class SegmentedPicker extends Component {
         nativeTestID: nativeTestID,
         style: styles.nativePicker,
         options: SegmentedPicker.ApplyPickerOptionDefaults(options),
-        defaultSelections: defaultSelections,
+        defaultSelections: selections,
         onValueChange: this.uiPickerValueChange,
         onEmitSelections: this.uiPickerManager.ingestSelections,
         theme: {
